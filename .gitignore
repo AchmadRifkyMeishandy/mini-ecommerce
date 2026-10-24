@@ -1,0 +1,23 @@
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Composer dependencies
+/vendor/
+
+# JavaScript dependencies
+/node_modules/
+
+# Log and temporary files
+*.log
+*.tmp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Local IDE settings
+/.idea/
