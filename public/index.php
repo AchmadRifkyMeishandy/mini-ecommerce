@@ -25,6 +25,14 @@ if ($method === 'GET' && $path === '/api/products') {
     exit;
 }
 
+if ($method === 'POST' && $path === '/api/products') {
+    $productModel = new Product($pdo);
+    $controller = new ProductController($productModel);
+
+    $controller->apiStore();
+    exit;
+}
+
 if (
     $method === 'GET' && preg_match('#^/api/products/([1-9][0-9]*)$#', $path, $matches)
 ) {

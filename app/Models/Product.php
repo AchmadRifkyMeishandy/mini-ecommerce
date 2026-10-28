@@ -44,4 +44,38 @@ class Product
 
         return $product == false ? null : $product;
     }
+
+    public function createProduct(
+        int $categoryId,
+        string $name,
+        string $slug,
+        string $price,
+        int $stock
+    ): int {
+        $sql = "INSERT INTO products (
+            category_id,
+            name,
+            slug,
+            price,
+            stock
+        ) VALUES (
+            :category_id,
+            :name,
+            :slug,
+            :price,
+            :stock
+        )";
+
+        $statement = $this->db->prepare($sql);
+
+        $statement->execute([
+            'category_id' => $categoryId,
+            'name' => $name,
+            'slug' => $slug,
+            'price' => $price,
+            'stock' => $stock,
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
 }
