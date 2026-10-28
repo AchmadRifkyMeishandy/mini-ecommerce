@@ -6,7 +6,15 @@ use App\Controllers\ProductController;
 use App\Models\Product;
 
 $pdo = require __DIR__ . '/../config/database.php';
+
 require_once __DIR__ . '/../app/Models/Product.php';
+
+require_once __DIR__ . '/../app/Support/HttpException.php';
+require_once __DIR__ . '/../app/Support/JsonResponse.php';
+require_once __DIR__ . '/../app/Support/JsonRequest.php';
+
+require_once __DIR__ . '/../app/Validators/ProductValidator.php';
+
 require_once __DIR__ . '/../app/Controllers/ProductController.php';
 
 $path = parse_url(

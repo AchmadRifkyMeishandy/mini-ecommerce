@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Models\Product;
+use App\Support\HttpException; // membawa informasi kesalahan beserta status HTTP.
+use App\Support\JsonRequest; // membaca dan memeriksa format JSON.
+use App\Support\JsonResponse; // mengirim respons JSON kepada client.
+use App\Validators\ProductValidator;
 
 final class ProductController
 {
@@ -23,14 +27,9 @@ final class ProductController
     {
         $products = $this->productModel->allActive();
 
-        http_response_code(200);
-
-        header('Content-Type: application/json; charset=utf-8');
-
-        echo json_encode(
-            ['data' => $products],
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
-        );
+        JsonResponse::send([
+            'data' => $products,
+        ]);
     }
 
     public function apiShow(int $id): void
@@ -50,201 +49,83 @@ final class ProductController
             return;
         }
 
-        http_response_code(200);
-
-        echo json_encode(
-            ['data' => $product],
-            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
-        );
+        JsonResponse::send([
+            'data' => $product,
+        ]);
     }
 
     public function apiStore(): void
     {
-        header('Content-Type: application/json; charset=utf-8');
-
-        // Pastikan request menggunakan JSON.
-        $contentType = strtolower($_SERVER['CONTENT_TYPE'] ?? '');
-
-        if (!str_contains($contentType, 'application/json')) {
-            http_response_code(415);
-            echo json_encode([
-                'message' => 'content type harus application/json.'
-            ]);
-            return;
-        }
-        // Baca body request.
-        $rawBody = file_get_contents('php://input');
-
-        if ($rawBody === false || trim($rawBody) === '') {
-            http_response_code(404);
-            echo json_encode([
-                'message' => 'Body request tidak boleh kosong.',
-            ]);
-            return;
-        }
-
-        // ubah JSON menjadi array PHP.
         try {
-            $payload = json_decode(
-                $rawBody,
-                true,
-                512,
-                JSON_THROW_ON_ERROR
+            $payload = JsonRequest::decode();
+        } catch (HttpException $exception) {
+            JsonResponse::send(
+                ['message' => $exception->getMessage()],
+                $exception->statusCode
             );
-        } catch (\JsonException $exception) {
-            http_response_code(400);
-            echo json_encode([
-                'message' => 'format JSON tidak valid.',
-            ]);
+
             return;
         }
-
-        if (!is_array($payload) || array_is_list($payload)) {
-            http_response_code(422);
-            echo json_encode([
-                'message' => 'Body harus berupa objek JSON.',
-            ]);
-            return;
-        }
-
-        // Baca body request.
-        $rawBody = file_get_contents('php://input');
-
-        if ($rawBody === false || trim($rawBody) === '') {
-            http_response_code(400);
-            echo json_encode([
-                'message' => 'Body request tidak boleh kosong.',
-            ]);
-            return;
-        }
-
-        // ubah JSON menajadi array PHP.
 
         try {
-            $payload = json_decode(
-                $rawBody,
-                true,
-                512,
-                JSON_THROW_ON_ERROR
+            $data = ProductValidator::validateForCreate($payload);
+        } catch (HttpException $exception) {
+            JsonResponse::send(
+                ['message' => $exception->getMessage()],
+                $exception->statusCode
             );
-        } catch (\JsonException $exception) {
-            http_response_code(400);
-            echo json_encode([
-                'message' => 'format JSON tidak valid.',
-            ]);
-            return;
-        }
-        // Pastikan field wajib tersedia
-        if (
-            !isset(
-                $payload['category_id'],
-                $payload['name'],
-                $payload['slug'],
-                $payload['price']
-            )
-        ) {
-            http_response_code(422);
-            echo json_encode([
-                'message' => 'category_id, name, slug, dan price wajib diisi.'
-            ]);
-            return;
-        }
 
-        // Persiapkan dan validasi nilai input.
-        $categoryId = filter_var(
-            $payload['category_id'],
-            FILTER_VALIDATE_INT
-        );
-
-        $stock = filter_var(
-            $payload['stock'] ?? 0,
-            FILTER_VALIDATE_INT
-        );
-
-        $name = is_string($payload['name'])
-            ? trim($payload['name'])
-            : '';
-
-        $slug = is_string($payload['slug'])
-            ? trim($payload['slug'])
-            : '';
-
-        $price = is_string($payload['price'])
-            || is_int($payload['price'])
-            || is_float($payload['price'])
-            ? (string) $payload['price']
-            : '';
-
-        if (
-            $categoryId === false
-            || $categoryId < 1
-            || $name === ''
-            || mb_strlen($name, 'UTF-8') > 150
-            || !preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)
-            || strlen($slug) > 150
-            || !preg_match('/^\d{1,10}(?:\.\d{1,2})?$/', $price)
-            || $stock === false
-            || $stock < 0
-        ) {
-            http_response_code(422);
-            echo json_encode([
-                'message' => 'Data produk tidak valid.',
-            ]);
             return;
         }
 
         // Simpan produk melalui Model.
         try {
             $productId = $this->productModel->createProduct(
-                $categoryId,
-                $name,
-                $slug,
-                $price,
-                $stock
+                $data['category_id'],
+                $data['name'],
+                $data['slug'],
+                $data['price'],
+                $data['stock']
             );
         } catch (\PDOException $exception) {
-            $mysqlErrorCode = (int) $exception->errorInfo[1] ?? 0;
+            $mysqlErrorCode = (int) ($exception->errorInfo[1] ?? 0);
 
             if ($mysqlErrorCode === 1062) {
-                http_response_code(409);
-                echo json_encode([
+                JsonResponse::send([
                     'message' => 'Slug produk sudah digunakan'
-                ]);
+                ], 409);
+
                 return;
             }
 
             if ($mysqlErrorCode === 1452) {
-                http_response_code(422);
-                echo json_encode([
+                JsonResponse::send([
                     'message' => 'Kategori produk tidak ditemukan.',
-                ]);
+                ], 422);
+
                 return;
             }
 
             error_log($exception->getMessage());
 
-            http_response_code(500);
-            echo json_encode([
+            JsonResponse::send([
                 'message' => 'Terjadi kesalahan pada server'
-            ]);
+            ], 500);
+
             return;
         }
 
         // Ambil kembali produk yang sudah dibuat.
         $product = $this->productModel->findActiveById($productId);
 
-        http_response_code(201);
-        header('Location: /api/products/' . $productId);
-
-        echo json_encode(
+        JsonResponse::send(
             [
                 'message' => 'Produk berhasil dibuat.',
                 'data' => $product,
             ],
-            JSON_PRETTY_PRINT
-                | JSON_UNESCAPED_UNICODE
-                | JSON_THROW_ON_ERROR
 
+            201,
+            '/api/products/' . $productId
         );
     }
 }
