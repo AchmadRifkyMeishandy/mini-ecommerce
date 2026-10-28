@@ -32,4 +32,29 @@ final class ProductController
             JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
         );
     }
+
+    public function apiShow(int $id): void
+    {
+        $product = $this->productModel->findActiveById($id);
+
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($product == null) {
+            http_response_code(404);
+
+            echo json_encode(
+                ['message' => 'Produk tidak ditemukan'],
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            );
+
+            return;
+        }
+
+        http_response_code(200);
+
+        echo json_encode(
+            ['data' => $product],
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+        );
+    }
 }
