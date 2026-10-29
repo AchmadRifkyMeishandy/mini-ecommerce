@@ -38,7 +38,7 @@ final class ProductController
 
         header('Content-Type: application/json; charset=utf-8');
 
-        if ($product == null) {
+        if ($product === null) {
             http_response_code(404);
 
             echo json_encode(
@@ -127,5 +127,85 @@ final class ProductController
             201,
             '/api/products/' . $productId
         );
+    }
+
+    public function apiUpdate(int $id): void
+    {
+        // 1. Pastikan produk yang dituju tersedia.
+        if ($this->productModel->findActiveById($id) === null) {
+            JsonResponse::send([
+                'message' => 'Produk tidak ditemukan.',
+            ], 404);
+
+            return;
+        }
+
+        // 2. Baca request JSON.
+        try {
+            $payload = JsonRequest::decode();
+        } catch (HttpException $exception) {
+            JsonResponse::send([
+                'message' => $exception->getMessage(),
+            ], $exception->statusCode);
+
+            return;
+        }
+
+        // 3. Validasi data produk.
+        try {
+            $data = ProductValidator::validateForUpdate($payload);
+        } catch (HttpException $exception) {
+            JsonResponse::send([
+                'message' => $exception->getMessage(),
+            ], $exception->statusCode);
+
+            return;
+        }
+
+        // 4. Simpan perubahan ke database.
+        try {
+            $this->productModel->updateActiveProduct(
+                $id,
+                $data['category_id'],
+                $data['name'],
+                $data['slug'],
+                $data['price'],
+                $data['stock']
+            );
+        } catch (\PDOException $exception) {
+            $mysqlErrorCode = (int) ($exception->errorInfo[1] ?? 0);
+
+            if ($mysqlErrorCode === 1062) {
+                JsonResponse::send([
+                    'message' => 'Slug produk sudah digunakan.',
+                ], 409);
+
+                return;
+            }
+
+            if ($mysqlErrorCode === 1452) {
+                JsonResponse::send([
+                    'message' => 'Kategori produk tidak ditemukan.',
+                ], 422);
+
+                return;
+            }
+
+            error_log($exception->getMessage());
+
+            JsonResponse::send([
+                'message' => 'Terjadi kesalahan pada server.',
+            ], 500);
+
+            return;
+        }
+
+        // 5. Ambil data terbaru dan kirim respons.
+        $product = $this->productModel->findActiveById($id);
+
+        JsonResponse::send([
+            'message' => 'Produk berhasil diperbarui.',
+            'data' => $product,
+        ]);
     }
 }

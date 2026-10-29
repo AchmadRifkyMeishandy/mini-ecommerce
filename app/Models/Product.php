@@ -42,7 +42,7 @@ class Product
 
         $product = $statement->fetch();
 
-        return $product == false ? null : $product;
+        return $product === false ? null : $product;
     }
 
     public function createProduct(
@@ -77,5 +77,34 @@ class Product
         ]);
 
         return (int) $this->db->lastInsertId();
+    }
+
+    public function updateActiveProduct(
+        int $id,
+        int $categoryId,
+        string $name,
+        string $slug,
+        string $price,
+        int $stock
+    ): void {
+        $sql = "UPDATE products
+                SET category_id = :category_id,
+                    name = :name,
+                    slug = :slug,
+                    price = :price,
+                    stock = :stock
+                WHERE id = :id
+                    AND is_active = 1";
+
+        $statement = $this->db->prepare($sql);
+
+        $statement->execute([
+            'id' => $id,
+            'category_id' => $categoryId,
+            'name' => $name,
+            'slug' => $slug,
+            'price' => $price,
+            'stock' => $stock,
+        ]);
     }
 }
