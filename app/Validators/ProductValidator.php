@@ -8,6 +8,18 @@ use App\Support\HttpException;
 
 final class ProductValidator
 {
+
+    public static function validateForUpdate(array $payload): array
+    {
+        if (!isset($payload['stock'])) {
+            throw new HttpException(
+                'Stock wajib diisi saat memperbarui produk.',
+                422
+            );
+        }
+
+        return self::validateForCreate($payload);
+    }
     public static function validateForCreate(array $payload): array
     {
         if (

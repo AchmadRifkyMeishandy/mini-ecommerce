@@ -42,6 +42,17 @@ if ($method === 'POST' && $path === '/api/products') {
 }
 
 if (
+    $method === 'PUT'
+    && preg_match('#^/api/products/([1-9][0-9]*)$#', $path, $matches)
+) {
+    $productModel = new Product($pdo);
+    $controller = new ProductController($productModel);
+
+    $controller->apiUpdate((int) $matches[1]);
+    exit;
+}
+
+if (
     $method === 'GET' && preg_match('#^/api/products/([1-9][0-9]*)$#', $path, $matches)
 ) {
     $productModel = new Product($pdo);
