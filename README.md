@@ -29,7 +29,7 @@ Project ini dikembangkan sebagai sarana pembelajaran pengembangan REST API, vali
 
 ## Struktur Proyek
 
-```text
+
 mini-ecommerce/
 ├── app/
 │   ├── Controllers/
@@ -40,14 +40,21 @@ mini-ecommerce/
 │   │   ├── HttpException.php
 │   │   ├── JsonRequest.php
 │   │   └── JsonResponse.php
-│   └── Validators/
-│       └── ProductValidator.php
+│   ├── Validators/
+│   │   └── ProductValidator.php
+│   └── Views/
+│       └── products/
+│           └── index.php
 ├── config/
 │   └── database.php
+├── database/
+│   ├── schema.sql
+│   └── seed.sql
 ├── public/
 │   └── index.php
-└── README.md
-```
+├── README.md
+└── roadmaps.md
+
 
 ## Persyaratan
 
@@ -68,30 +75,45 @@ git clone https://github.com/AchmadRifkyMeishandy/mini-ecommerce.git
 cd mini-ecommerce
 ```
 
+
 ### 2. Siapkan database
 
-Jalankan MySQL melalui Laragon, kemudian buat database:
+Pastikan MySQL sudah berjalan melalui Laragon.
 
-```sql
-CREATE DATABASE mini_ecommerce;
+Buka terminal Git Bash di direktori utama project, kemudian jalankan:
+
+```bash
+mysql -u root -p < database/schema.sql
 ```
 
-Buat tabel `categories` dan `products` sesuai struktur database yang digunakan proyek ini. Tabel produk membutuhkan relasi ke tabel kategori.
+Perintah tersebut akan menjalankan file `schema.sql` untuk membuat database `mini_ecommerce` beserta tabel `categories` dan `products`.
 
-Pastikan terdapat data kategori dan produk untuk pengujian API.
+Jika MySQL lokal menggunakan password kosong, tekan Enter saat diminta password.
 
-### 3. Atur koneksi database
+### 3. Masukkan data awal
 
-Periksa file `config/database.php` dan sesuaikan konfigurasi koneksi dengan lingkungan lokal:
+Jalankan perintah:
+
+```bash
+mysql -u root -p mini_ecommerce < database/seed.sql
+```
+
+Perintah ini memasukkan data awal kategori dan produk ke database.
+
+Pastikan data berhasil dimasukkan sebelum melanjutkan.
+
+### 4. Atur koneksi database
+
+Buka file `config/database.php` dan sesuaikan konfigurasi berikut dengan lingkungan lokal:
 
 - Host database.
-- Nama database.
-- Username.
-- Password.
+- Nama database: `mini_ecommerce`.
+- Username MySQL.
+- Password MySQL.
 
 Jangan menyimpan password atau kredensial database yang sensitif ke repository publik.
 
-### 4. Jalankan server PHP
+### 5. Jalankan server PHP
 
 Dari direktori utama proyek, jalankan:
 
