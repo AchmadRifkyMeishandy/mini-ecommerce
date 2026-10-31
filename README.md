@@ -149,10 +149,71 @@ GET /api/products
 
 Mengambil daftar produk yang berstatus aktif.
 
+Endpoint ini mendukung pencarian, filter kategori, dan pagination.
+
+**Parameter query:**
+
+| Parameter | Wajib | Default | Keterangan |
+|---|---|---|---|
+| `search` | Tidak | - | Mencari berdasarkan nama produk, maksimal 150 karakter |
+| `category_id` | Tidak | - | Memfilter berdasarkan ID kategori positif |
+| `page` | Tidak | `1` | Nomor halaman, minimal 1 |
+| `per_page` | Tidak | `10` | Jumlah produk per halaman, antara 1 sampai 100 |
+
+**Contoh penggunaan:**
+
+```bash
+# Menampilkan seluruh produk aktif
+curl -i "http://127.0.0.1:8000/api/products"
+
+# Mencari produk berdasarkan nama
+curl -i "http://127.0.0.1:8000/api/products?search=tas"
+
+# Filter berdasarkan kategori
+curl -i "http://127.0.0.1:8000/api/products?category_id=2"
+
+# Menggunakan pagination
+curl -i "http://127.0.0.1:8000/api/products?page=1&per_page=2"
+
+# Menggabungkan pencarian, filter, dan pagination
+curl -i "http://127.0.0.1:8000/api/products?search=tas&category_id=2&page=1&per_page=1"
+```
+
+**Contoh respons berhasil:**
+
+```json
+{
+    "data": [
+        {
+            "id": 11,
+            "name": "Tas Testing Refactor 2",
+            "price": "125000.00",
+            "stock": 7,
+            "category_name": "Kaos"
+        }
+    ],
+    "pagination": {
+        "current_page": 1,
+        "per_page": 1,
+        "total_items": 2,
+        "total_pages": 2,
+        "offset": 0
+    }
+}
+```
+
+Keterangan pagination:
+
+- `current_page`: halaman yang sedang dibuka.
+- `per_page`: jumlah maksimal produk per halaman.
+- `total_items`: jumlah seluruh produk yang cocok dengan filter.
+- `total_pages`: jumlah halaman yang tersedia.
+- `offset`: posisi awal pengambilan data dari database.
+
 ### 2. Menampilkan detail produk
 
 ```http
-GET /api/products/13
+GET /api/products/{id}
 ```
 
 Mengambil detail produk berdasarkan ID.
@@ -168,36 +229,39 @@ Contoh isi permintaan:
 
 ```json
 {
-  "category_id": 2,
-  "name": "Tas Baru",
-  "slug": "tas-baru",
-  "price": "150000.00",
-  "stock": 10
+    "category_id": 2,
+    "name": "Tas Baru",
+    "slug": "tas-baru",
+    "price": "150000.00",
+    "stock": 10
 }
 ```
 
 ### 4. Memperbarui produk
 
 ```http
-PUT /api/products/13
+PUT /api/products/{id}
 Content-Type: application/json
 ```
 
 Contoh menggunakan cURL:
 
 ```bash
-curl -X PUT http://127.0.0.1:8000/api/products/13 \
-  -H "Content-Type: application/json" \
-  -d '{"category_id":2,"name":"Tas Terbaru","slug":"tas-terbaru","price":"155000.00","stock":12}'
+curl -X PUT "http://127.0.0.1:8000/api/products/13" \
+    -H "Content-Type: application/json" \
+    -d '{"category_id":2,"name":"Tas Terbaru","slug":"tas-terbaru","price":"155000.00","stock":12}'
 ```
 
-Permintaan tersebut memperbarui kategori, nama, slug, harga, dan stok produk dengan ID `13`.
+Permintaan tersebut memperbarui kategori, nama, slug, harga, dan stok produk dengan ID yang ditentukan.
 
 ### 5. Menonaktifkan produk
 
 ```http
 DELETE /api/products/{id}
+```
+Menonaktifkan produk menggunakan mekanisme **soft delete**.
 
+Produk tidak dihapus secara permanen dari database. Status `is_active` diubah menjadi `0`, sehingga produk tidak lagi ditampilkan dalam daftar produk aktif.
 ## Kode Status HTTP
 
 | Kode | Arti |

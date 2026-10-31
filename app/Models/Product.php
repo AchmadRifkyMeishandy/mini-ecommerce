@@ -12,19 +12,84 @@ class Product
         private PDO $db
     ) {}
 
-    public function allActive(): array
-    {
+    public function allActive(
+        ?string $search = null,
+        ?int $categoryId = null,
+        int $limit = 10,
+        int $offset = 0
+    ): array {
         $sql = "SELECT p.id, p.name, p.price, p.stock, c.name AS category_name
         FROM products AS p
         INNER JOIN categories AS c
             ON c.id = p.category_id
-        WHERE p.is_active = 1
-        ORDER BY p.id DESC
-        ";
+        WHERE p.is_active = 1";
 
-        $statement = $this->db->query($sql);
+        $parameters = [];
+
+        // Filter berdasarkan nama produk.
+        if ($search !== null && $search !== '') {
+            $sql .= " AND p.name LIKE :search";
+            $parameters['search'] = '%' . $search . '%';
+        }
+
+        if ($categoryId !== null) {
+            $sql .= " AND p.category_id = :category_id";
+            $parameters['category_id'] = $categoryId;
+        }
+
+        // Urutkan dan batasi jumlah data.
+        $sql .= " ORDER BY p.id DESC LIMIT :limit OFFSET :offset";
+
+        $statement = $this->db->prepare($sql);
+
+        // Hubungkan parameter pencarian dan kategori ke SQL.
+        foreach ($parameters as $placeholder => $value) {
+            $parameterType = is_int($value)
+                ? PDO::PARAM_INT
+                : PDO::PARAM_STR;
+
+            $statement->bindValue(
+                ':' . $placeholder,
+                $value,
+                $parameterType
+            );
+        }
+
+        // Hubungkan parameter pagination sebagai integer.
+        $statement->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $statement->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+        $statement->execute();
 
         return $statement->fetchAll();
+    }
+
+    public function countActive(
+        ?string $search = null,
+        ?int $categoryId = null
+    ): int {
+        $sql = "SELECT COUNT(*)
+                FROM products
+                WHERE is_active = 1";
+
+        $parameters = [];
+
+        // Filter berdasarkan nama produk.
+        if ($search !== null && $search !== '') {
+            $sql .= " AND name LIKE :search";
+            $parameters['search'] = '%' . $search . '%';
+        }
+
+        // Filter berdasarkan kategori.
+        if ($categoryId !== null) {
+            $sql .= " AND category_id = :category_id";
+            $parameters['category_id'] = $categoryId;
+        }
+
+        $statement = $this->db->prepare($sql);
+        $statement->execute($parameters);
+
+        return (int) $statement->fetchColumn();
     }
 
     public function findActiveById(int $id): ?array

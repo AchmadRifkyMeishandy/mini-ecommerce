@@ -25,10 +25,50 @@ final class ProductController
 
     public function apiIndex(): void
     {
-        $products = $this->productModel->allActive();
 
+        // 1. Ambil dan validasi parameter dari URL.
+        try {
+            $filters = ProductValidator::validateFilters($_GET);
+        } catch (HttpException $exception) {
+            JsonResponse::send([
+                'message' => $exception->getMessage(),
+            ], $exception->statusCode);
+
+            return;
+        }
+
+        // 2. Hitung posisi awal pengambilan data.
+        $offset = ($filters['page'] - 1) * $filters['per_page'];
+
+        // 3. Ambil produk berdasarkan filter dan pagination.
+        $products = $this->productModel->allActive(
+            $filters['search'],
+            $filters['category_id'],
+            $filters['per_page'],
+            $offset
+        );
+
+        // 4. Hitung seluruh produk yang cocok dengan filter.
+        $totalItems = $this->productModel->countActive(
+            $filters['search'],
+            $filters['category_id']
+        );
+
+        // 5. Hitung jumlah halaman.
+        $totalPages = (int) ceil(
+            $totalItems / $filters['per_page']
+        );
+
+        // 6. Kirim data dan informasi pagination.
         JsonResponse::send([
             'data' => $products,
+            'pagination' => [
+                'current_page' => $filters['page'],
+                'per_page' => $filters['per_page'],
+                'total_items' => $totalItems,
+                'total_pages' => $totalPages,
+                'offset' => $offset,
+            ],
         ]);
     }
 

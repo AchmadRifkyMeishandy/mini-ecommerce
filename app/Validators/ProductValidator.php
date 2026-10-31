@@ -9,6 +9,104 @@ use App\Support\HttpException;
 final class ProductValidator
 {
 
+    public static function validateFilters(array $query): array
+    {
+        $search = null;
+        $categoryId = null;
+        $page = 1;
+        $perPage = 10;
+
+        // Validasi parameter pencarian.
+        if (array_key_exists('search', $query)) {
+            if (!is_string($query['search'])) {
+                throw new HttpException(
+                    'Parameter search harus berupa teks.',
+                    422
+                );
+            }
+
+            $search = trim($query['search']);
+
+            if (mb_strlen($search, 'UTF-8') > 150) {
+                throw new HttpException(
+                    'Pencarian maksimal 150 karakter.',
+                    422
+                );
+            }
+
+            if ($search === '') {
+                $search = null;
+            }
+        }
+
+        // Validasi parameter kategori.
+        if (
+            array_key_exists('category_id', $query)
+            && $query['category_id'] !== ''
+        ) {
+            $categoryId = filter_var(
+                $query['category_id'],
+                FILTER_VALIDATE_INT
+            );
+
+            if ($categoryId === false || $categoryId < 1) {
+                throw new HttpException(
+                    'category_id harus berupa angka positif.',
+                    422
+                );
+            }
+        }
+
+        // Validasi nomor halaman.
+        if (array_key_exists('page', $query)) {
+            $page = filter_var(
+                $query['page'],
+                FILTER_VALIDATE_INT
+            );
+
+            if ($page === false || $page < 1) {
+                throw new HttpException(
+                    'page harus berupa angka bulat minimal 1.',
+                    422
+                );
+            }
+        }
+
+        // Validasi jumlah produk per halaman.
+        if (array_key_exists('per_page', $query)) {
+            $perPage = filter_var(
+                $query['per_page'],
+                FILTER_VALIDATE_INT
+            );
+
+            if (
+                $perPage === false
+                || $perPage < 1
+                || $perPage > 100
+            ) {
+                throw new HttpException(
+                    'per_page harus berupa angka antara 1 sampai 100',
+                    422
+                );
+            }
+        }
+
+        // Pastikan offset tidak melebihi batas integer PHP.
+        if (($page - 1) > intdiv(PHP_INT_MAX, $perPage)) {
+            throw new HttpException(
+                'Nomor halaman terlalu besar.',
+                422
+            );
+        }
+
+        return [
+            'search' => $search,
+            'category_id' => $categoryId,
+            'page' => $page,
+            'per_page' => $perPage,
+        ];
+    }
+
     public static function validateForUpdate(array $payload): array
     {
         if (!isset($payload['stock'])) {
