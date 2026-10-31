@@ -208,4 +208,34 @@ final class ProductController
             'data' => $product,
         ]);
     }
+
+    public function apiDestroy(int $id): void
+    {
+        // 1. Nonaktifkan produk di database.
+        try {
+            $isDeactivated = $this->productModel->deactivateActiveProduct($id);
+        } catch (\PDOException $exception) {
+            error_log($exception->getMessage());
+
+            JsonResponse::send([
+                'message' => 'Terjadi kesalahan pada server.',
+            ], 500);
+
+            return;
+        }
+
+        // 2. Periksa apakah produk berhasil dinonaktifkan.
+        if (!$isDeactivated) {
+            JsonResponse::send([
+                'message' => 'Produk tidak ditemukan.',
+            ], 404);
+
+            return;
+        }
+
+        // 3. Kirim respons berhasil
+        JsonResponse::send([
+            'message' => 'Produk berhasil dinonaktifkan.',
+        ]);
+    }
 }

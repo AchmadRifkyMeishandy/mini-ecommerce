@@ -107,4 +107,20 @@ class Product
             'stock' => $stock,
         ]);
     }
+
+    public function deactivateActiveProduct(int $id): bool
+    {
+        $sql = "UPDATE products
+                SET is_active = 0
+                WHERE id = :id
+                    AND is_active = 1";
+
+        $statement = $this->db->prepare($sql);
+
+        $statement->execute([
+            'id' => $id,
+        ]);
+
+        return $statement->rowCount() > 0;
+    }
 }

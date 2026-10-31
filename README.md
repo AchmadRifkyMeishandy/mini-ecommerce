@@ -139,6 +139,7 @@ Alamat dasar API:
 | GET | `/api/products/{id}` | Menampilkan detail produk |
 | POST | `/api/products` | Menambahkan produk baru |
 | PUT | `/api/products/{id}` | Memperbarui produk aktif |
+| DELETE | `/api/products/{id}` | Menonaktifkan produk (soft delete) |
 
 ### 1. Menampilkan daftar produk
 
@@ -191,6 +192,11 @@ curl -X PUT http://127.0.0.1:8000/api/products/13 \
 ```
 
 Permintaan tersebut memperbarui kategori, nama, slug, harga, dan stok produk dengan ID `13`.
+
+### 5. Menonaktifkan produk
+
+```http
+DELETE /api/products/{id}
 
 ## Kode Status HTTP
 

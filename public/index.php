@@ -53,6 +53,18 @@ if (
 }
 
 if (
+    $method === 'DELETE'
+    && preg_match('#^/api/products/([1-9][0-9]*)$#', $path, $matches)
+) {
+    $productModel = new Product($pdo);
+    $controller = new ProductController($productModel);
+
+    $controller->apiDestroy((int) $matches[1]);
+    exit;
+}
+
+
+if (
     $method === 'GET' && preg_match('#^/api/products/([1-9][0-9]*)$#', $path, $matches)
 ) {
     $productModel = new Product($pdo);
